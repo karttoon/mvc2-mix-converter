@@ -1,0 +1,21 @@
+# --- Copyrighted game data: you must supply your own (see SETUP.md) ---
+base/*.cdi
+base/*.arc
+base/stock_music/
+
+# --- ffmpeg: 100+ MB, exceeds GitHub's file limit; download it (tools/README.txt) ---
+tools/ffmpeg.exe
+tools/ffprobe.exe
+
+# --- User content and build output ---
+mixes/*
+!mixes/README.txt
+output/*
+!output/.gitkeep
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/

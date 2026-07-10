@@ -1,0 +1,7 @@
+# Python: standard library only. No pip packages required (Python 3.10+).
+#
+# External tool (see SETUP.md / tools/README.txt):
+#   tools/ffmpeg.exe   - music transcode (ADX <-> Ogg Vorbis); download separately
+#
+# The Steam game_50.arc is a single zlib stream and is un/repacked in pure Python
+# (mixconv/steam.py) - no external archive tool is needed.
