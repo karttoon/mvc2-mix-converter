@@ -160,8 +160,69 @@ def _fix_vendor(ogg_bytes, vendor=b"Xiph.Org libVorbis I 20200704 (Reducing Envi
     return ogg_bytes
 
 
+def _read_loop_comments(ogg_bytes):
+    """Pull LoopStart/LoopEnd (in samples) from the .sngw Vorbis comments, or
+    (None, None) if absent. Values are ASCII digits after the tag."""
+    def val(tag):
+        i = ogg_bytes.find(tag + b"=")
+        if i < 0:
+            return None
+        j = i + len(tag) + 1
+        d = bytearray()
+        while j < len(ogg_bytes) and 0x30 <= ogg_bytes[j] <= 0x39:
+            d.append(ogg_bytes[j]); j += 1
+        return int(d) if d else None
+    return val(b"LoopStart"), val(b"LoopEnd")
+
+
+def _adx_set_loop(adx_bytes, loop_start, loop_end):
+    """Rebuild an ffmpeg ADX (which carries no loop table) as a type-3 ADX with a
+    loop table, so the Dreamcast BGM engine loops it. loop_start/loop_end are in
+    samples at the ADX's own sample rate. Byte offsets follow the CRI layout
+    verified against stock MvC2 ADX:
+        byte = header_size + frame_index * (block_size * channels)
+        loop-start frame = start // 32 ;  loop-end frame = ceil(end / 32)
+    """
+    import struct
+    co = struct.unpack_from(">H", adx_bytes, 2)[0]
+    payload = adx_bytes[co + 4:]                 # ffmpeg's ADPCM data (audio starts at co+4)
+    block = adx_bytes[5]; ch = adx_bytes[7]
+    rate = struct.unpack_from(">I", adx_bytes, 8)[0]
+    total = struct.unpack_from(">I", adx_bytes, 12)[0]
+    highpass = struct.unpack_from(">H", adx_bytes, 16)[0]
+
+    HS = 0x34                                    # new header size (audio starts here)
+    frame = block * ch
+    ls_byte = HS + (loop_start // 32) * frame
+    le_byte = HS + ((loop_end + 31) // 32) * frame
+
+    h = bytearray(HS)
+    h[0:2] = b"\x80\x00"
+    struct.pack_into(">H", h, 2, HS - 4)         # copyright offset (audio at +4)
+    h[4] = 3; h[5] = block; h[6] = 4; h[7] = ch
+    struct.pack_into(">I", h, 8, rate)
+    struct.pack_into(">I", h, 12, total)
+    struct.pack_into(">H", h, 16, highpass)
+    h[18] = 3; h[19] = 0                          # version 3, flags 0
+    struct.pack_into(">H", h, 0x14, 0)
+    struct.pack_into(">H", h, 0x16, 1)
+    struct.pack_into(">I", h, 0x18, 1)           # loop enabled
+    struct.pack_into(">I", h, 0x1C, loop_start)
+    struct.pack_into(">I", h, 0x20, ls_byte)
+    struct.pack_into(">I", h, 0x24, loop_end)
+    struct.pack_into(">I", h, 0x28, le_byte)
+    h[HS - 6:HS] = b"(c)CRI"
+    return bytes(h) + payload
+
+
 def sngw_to_adx(sngw_bytes, ffmpeg):
-    """Steam .sngw (Ogg) bytes -> DC ADX bytes (adpcm_adx, full-file loop)."""
+    """Steam .sngw (Ogg) bytes -> DC ADX bytes.
+
+    The DC BGM engine reads loop points from the ADX header. ffmpeg's adpcm_adx
+    encoder writes none, so we transcode, then inject a loop table built from the
+    .sngw's LoopStart/LoopEnd Vorbis comments (same sample rate, so no scaling).
+    Tracks with no loop comments (one-shot jingles: continue, "here we go", etc.)
+    are left un-looped, matching stock."""
     with tempfile.TemporaryDirectory() as d:
         i = os.path.join(d, "in.ogg"); o = os.path.join(d, "out.adx")
         open(i, "wb").write(sngw_bytes)
@@ -171,4 +232,8 @@ def sngw_to_adx(sngw_bytes, ffmpeg):
                            creationflags=_NO_WINDOW)
         if p.returncode != 0:
             raise RuntimeError("ogg->ADX failed: " + p.stderr.decode(errors="replace"))
-        return open(o, "rb").read()
+        adx = open(o, "rb").read()
+    ls, le = _read_loop_comments(sngw_bytes)
+    if ls is None or le is None or le <= ls:
+        return adx                               # one-shot: no loop table (matches stock)
+    return _adx_set_loop(adx, ls, le)

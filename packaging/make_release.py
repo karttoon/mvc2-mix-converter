@@ -20,7 +20,7 @@ import os, shutil, zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST = os.path.join(ROOT, "dist")
-REL_NAME = "MixConverter_v1.1.1"
+REL_NAME = "MixConverter_v1.1.2"
 REL = os.path.join(DIST, REL_NAME)
 README = os.path.join(ROOT, "packaging", "readme")
 
