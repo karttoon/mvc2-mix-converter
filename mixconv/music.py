@@ -178,10 +178,16 @@ def _read_loop_comments(ogg_bytes):
 def _adx_set_loop(adx_bytes, loop_start, loop_end):
     """Rebuild an ffmpeg ADX (which carries no loop table) as a type-3 ADX with a
     loop table, so the Dreamcast BGM engine loops it. loop_start/loop_end are in
-    samples at the ADX's own sample rate. Byte offsets follow the CRI layout
-    verified against stock MvC2 ADX:
-        byte = header_size + frame_index * (block_size * channels)
-        loop-start frame = start // 32 ;  loop-end frame = ceil(end / 32)
+    samples at the ADX's own sample rate.
+
+    CRITICAL (verified against all 18 stock MvC2 looping ADX, and the reason
+    tracks otherwise play once then die in a skip-then-silence): the game's ADX
+    streamer performs the loop jump as a whole-SECTOR seek, so the loop-start
+    byte offset MUST be 2048-aligned. CRI's encoder achieves this by padding the
+    HEADER to a variable size; we do the same:
+        header_size = (-loop_start_frames*frame_bytes) mod 2048   (+2048 if < 0x34)
+        ls_byte     = header_size + (loop_start//32)*frame_bytes  -> multiple of 2048
+    Loop-end needs no alignment (stock's aren't aligned).
     """
     import struct
     co = struct.unpack_from(">H", adx_bytes, 2)[0]
@@ -191,9 +197,13 @@ def _adx_set_loop(adx_bytes, loop_start, loop_end):
     total = struct.unpack_from(">I", adx_bytes, 12)[0]
     highpass = struct.unpack_from(">H", adx_bytes, 16)[0]
 
-    HS = 0x34                                    # new header size (audio starts here)
     frame = block * ch
-    ls_byte = HS + (loop_start // 32) * frame
+    audio = payload[:((total + 31) // 32) * frame]   # pure ADPCM (drop ffmpeg's footer)
+    pre_bytes = (loop_start // 32) * frame
+    HS = (-pre_bytes) % 2048                     # header size that sector-aligns ls_byte
+    if HS < 0x34:                                # need room for the loop fields
+        HS += 2048
+    ls_byte = HS + pre_bytes                     # always a multiple of 2048
     le_byte = HS + ((loop_end + 31) // 32) * frame
 
     h = bytearray(HS)
@@ -212,7 +222,14 @@ def _adx_set_loop(adx_bytes, loop_start, loop_end):
     struct.pack_into(">I", h, 0x24, loop_end)
     struct.pack_into(">I", h, 0x28, le_byte)
     h[HS - 6:HS] = b"(c)CRI"
-    return bytes(h) + payload
+
+    # Pad the END to a 2048 boundary too with a CRI ADX footer (0x8001 + len),
+    # matching every stock looping ADX (one-shots aren't padded).
+    audio_end = HS + len(audio)
+    target = ((audio_end + 4 + 2047) // 2048) * 2048
+    pad = target - audio_end
+    footer = b"\x80\x01" + struct.pack(">H", pad - 4) + b"\x00" * (pad - 4)
+    return bytes(h) + audio + footer
 
 
 def sngw_to_adx(sngw_bytes, ffmpeg):
