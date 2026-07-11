@@ -2,7 +2,7 @@
 
 Convert **Marvel vs. Capcom 2 "mixes"** between the **Dreamcast** (`.cdi` disc image)
 and the **Steam Marvel vs. Capcom Fighting Collection** (`game_50.arc`) — in both
-directions, from a simple terminal menu.
+directions, from a simple point-and-click app (or a terminal menu, if you prefer).
 
 - **DC → Steam** — point it at a Dreamcast mix and it installs the mix's stages,
   character palettes, HUD/effects, UI and music straight into your Steam game.
@@ -29,20 +29,35 @@ usable by non-technical people.
 Nothing is silently dropped — every changed file is reported as converted or, if
 it genuinely can't cross platforms, listed with the reason.
 
-## Requirements
+## Two ways to run it
 
-- **Windows** (the Steam collection is Windows-only; paths assume it)
-- **Python 3.10+** (standard library only — no pip packages)
+Both use the same engine and do the same things — pick whichever you like.
+
+### A) Standalone app — easiest, no Python
+
+Grab the `MixConverter_v1.0.zip` from the release, unzip it (keep the files
+together), and double-click **`MixConverter.exe`**. ffmpeg is bundled; there's no
+Python install and no console.
+
+1. **Setup tab** → **Build initial backup from Steam** (it auto-detects your Steam
+   install; use *Change Steam folder…* if it's on another drive). For a clean
+   baseline, verify the game in Steam first.
+2. **Install into Steam** → pick a mix (`.cdi`/`.zip`) → *Convert & Install*.
+3. **Build a Disc** → optionally pick a base `.cdi` → *Build Disc*.
+4. **Restore / Reset** → undo a mix or return to your baseline.
+
+### B) From source — advanced / cross-checking
+
+- **Windows**, **Python 3.10+** (standard library only — no pip packages)
 - **ffmpeg** (for music) — `setup.py` can download it for you
-- **Your own game data** — a clean Steam install (setup copies from it
-  automatically). A stock Dreamcast disc is only needed to *build* DC discs.
+- **Your own game data** — a clean Steam install (setup copies from it). A stock
+  Dreamcast disc is only needed to *build* DC discs.
 
-## Quick start
-
-1. Run **`py setup.py`** once — it downloads ffmpeg and copies your stock Steam
-   files from your own install. (See [SETUP.md](SETUP.md).)
-2. Put your Dreamcast mixes (`.cdi` or `.zip`) into `mixes\`.
-3. Double-click **`MixConverter.bat`** (or run `py mixconv\menu.py`).
+1. Run **`py setup.py`** once (fetches ffmpeg, copies your stock Steam files — see
+   [SETUP.md](SETUP.md)).
+2. Put your mixes (`.cdi`/`.zip`) into `mixes\`.
+3. Launch the GUI with **`py mixconv\gui.py`**, or the terminal menu via
+   **`MixConverter.bat`** / `py mixconv\menu.py`:
 
 ```
    [1] Install a DC mix into Steam        (DC  -> Steam)
@@ -52,11 +67,15 @@ it genuinely can't cross platforms, listed with the reason.
    [5] Exit
 ```
 
-**Building a DC disc (option 2)** can either start from a fresh stock disc, or
-**patch an existing `.cdi`** — e.g. one built on the Paxtez site with custom
-stages/mods. In that case your Steam colors, HUD, effects and music are patched
-on top, keeping the base disc's mods wherever the Steam side didn't also change
-them.
+**Building a DC disc** can start from a fresh stock disc, or **patch an existing
+`.cdi`** — an already-modded disc with custom stages/mods. In that case your Steam
+palettes, HUD, effects and music are patched on top, keeping the base disc's mods
+wherever the Steam side didn't also change them.
+
+> **Maintainers:** the standalone app is built with PyInstaller from
+> [`packaging/MixConverter.spec`](packaging/MixConverter.spec); run
+> `py packaging/make_release.py` to assemble the distributable ZIP. See
+> [`packaging/`](packaging/) for details.
 
 ## How it works (short version)
 

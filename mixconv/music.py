@@ -18,10 +18,14 @@ as Vorbis LoopStart/LoopEnd comments (the Steam BGM engine requires those, plus 
 "Ver=0002" tag and 48 kHz, or it plays nothing). For OGG->ADX we set a full-file
 loop by default.
 """
-import os, re, subprocess, shutil, tempfile
+import os, sys, re, subprocess, shutil, tempfile
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import config
 
-_BUNDLED = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        "tools", "ffmpeg.exe")
+# Bundled ffmpeg lives next to the .exe (frozen) / repo root (source) — config
+# resolves the folder in both cases, so this is the single source of truth.
+_BUNDLED = config.FFMPEG
+_NO_WINDOW = config.NO_WINDOW    # suppress console flash under a --windowed exe
 
 def find_ffmpeg(explicit=None):
     for cand in (explicit, os.environ.get("MIXCONV_FFMPEG"), _BUNDLED, "ffmpeg"):
@@ -52,7 +56,8 @@ def sngw_name_to_adx(name):
 def _run(ff, args, data):
     """Run ffmpeg reading `data` from stdin, returning stdout bytes."""
     p = subprocess.run([ff, "-hide_banner", "-loglevel", "error", *args],
-                       input=data, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                       input=data, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                       creationflags=_NO_WINDOW)
     if p.returncode != 0:
         raise RuntimeError("ffmpeg failed: " + p.stderr.decode(errors="replace"))
     return p.stdout
@@ -125,7 +130,8 @@ def adx_to_sngw(adx_bytes, ffmpeg):
                             "-metadata", f"LoopEnd={le_out}",
                             "-metadata", "Ver=0002",
                             "-metadata", "Time=20240101000000", o],
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                           creationflags=_NO_WINDOW)
         if p.returncode != 0:
             raise RuntimeError("ADX->ogg failed: " + p.stderr.decode(errors="replace"))
         out = open(o, "rb").read()
@@ -161,7 +167,8 @@ def sngw_to_adx(sngw_bytes, ffmpeg):
         open(i, "wb").write(sngw_bytes)
         p = subprocess.run([ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
                             "-i", i, "-c:a", "adpcm_adx", o],
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                           creationflags=_NO_WINDOW)
         if p.returncode != 0:
             raise RuntimeError("ogg->ADX failed: " + p.stderr.decode(errors="replace"))
         return open(o, "rb").read()

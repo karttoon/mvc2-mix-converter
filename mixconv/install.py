@@ -99,6 +99,42 @@ def build_dc_from_steam(out_cdi, mix_arc=None, base_cdi=None, conflict_mode="ste
     return out_cdi
 
 
+# --------------------------------------------------------------- first-run setup
+def copy_stock_from_steam(progress=print):
+    """Populate base/ with the user's CURRENT Steam arc + music as their backup /
+    baseline. For a truly clean baseline they should Verify integrity in Steam
+    first, but any current state works as a restore point. ffmpeg is bundled, so
+    nothing is downloaded."""
+    root = config.steam_root()
+    if not root:
+        raise RuntimeError("Steam Fighting Collection install not found")
+    os.makedirs(config.BASE, exist_ok=True)
+    progress("Copying your current Steam files as your backup...")
+    shutil.copyfile(config.steam_arc(root), config.STOCK_STEAM_ARC)
+    progress(f"  game_50.arc -> {config.STOCK_STEAM_ARC}")
+    os.makedirs(config.STOCK_MUSIC, exist_ok=True)
+    wav = config.steam_music_dir(root)
+    n = 0
+    for f in os.listdir(wav):
+        if f.lower().endswith(".sngw"):
+            shutil.copyfile(os.path.join(wav, f), os.path.join(config.STOCK_MUSIC, f))
+            n += 1
+    progress(f"  {n} music tracks -> {config.STOCK_MUSIC}")
+    progress("\nBackup created. You're ready to install mixes into Steam.")
+    return n
+
+
+def set_stock_dc(cdi_path, progress=print):
+    """Copy a user-provided stock Dreamcast .cdi into base/ (needed only to BUILD
+    Dreamcast discs, Steam -> DC)."""
+    if not cdi_path or not os.path.exists(cdi_path):
+        raise RuntimeError("file not found: " + str(cdi_path))
+    os.makedirs(config.BASE, exist_ok=True)
+    progress("Copying stock Dreamcast disc...")
+    shutil.copyfile(cdi_path, config.STOCK_DC_CDI)
+    progress(f"  -> {config.STOCK_DC_CDI}\nYou can now build Dreamcast discs.")
+
+
 # --------------------------------------------------------------- reset to stock
 def reset_to_stock(progress=print):
     """Overwrite the live Steam arc + music with the bundled true-stock baseline."""

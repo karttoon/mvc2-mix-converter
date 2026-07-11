@@ -19,3 +19,11 @@ __pycache__/
 *.pyo
 .venv/
 venv/
+
+# --- PyInstaller build output (see packaging/) ---
+build/
+dist/
+*.manifest
+
+# --- GUI runtime state ---
+steam_path.txt

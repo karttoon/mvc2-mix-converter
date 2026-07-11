@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """manifest.py - load the canonical AFS index<->name map and classify files."""
-import json, os, re
+import json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT = os.path.join(os.path.dirname(HERE), "data", "afs_manifest.json")
+# The manifest is a read-only bundled resource. Frozen as a PyInstaller exe it is
+# extracted under sys._MEIPASS (via --add-data "data/..."); from source it sits in
+# the repo's data/ folder next to mixconv/.
+_RES = getattr(sys, "_MEIPASS", os.path.dirname(HERE))
+DEFAULT = os.path.join(_RES, "data", "afs_manifest.json")
 
 # Dispositions for how a changed file crosses platforms.
 WHOLE_FILE = "whole_file"   # byte-identical stock format -> copy the whole file
