@@ -10,6 +10,12 @@ Data track here is mode-2, 2336-byte sectors (8-byte subheader + 2048 user + 280
 EDC/ECC). We copy a real sector's subheader and leave EDC/ECC zero (Flycast ignores
 it; parity for real hardware is future work).
 
+Multi-session safe: self-boot mix discs (e.g. Boot Dreams output) have a second
+session after the game data. Appended sectors are inserted BEFORE session 2, which
+is shifted later, and all of its footer geometry fields (start/end LBA, plus the
+duplicate copies DiscJuggler keeps) are bumped -- otherwise session 2 is clobbered
+and the disc won't boot.
+
 This module first exposes the footer field offsets so we can patch track length
 in place, verified against disc.parse_cdi before any mutation.
 """
@@ -176,10 +182,20 @@ def grow_cdi(src, dst, files: dict):
 
     subheader = bytes(data[base:base + hlen]) if hlen else b""  # reuse a real subheader
 
+    # Multi-session aware: the grown track's file region ends at insert_point. On a
+    # 2-session self-boot disc (e.g. Boot Dreams output) session 2's data and then the
+    # footer follow it. Capture both, then drop everything from insert_point on, so
+    # appended sectors INSERT before session 2 (which is shifted later) instead of
+    # overwriting it -- the single-track assumption otherwise clobbers session 2 and
+    # leaves its TOC fields stale, producing a disc that won't boot.
+    insert_point = tr.data_offset + tr.total_length * ss
+    later_data = bytes(data[insert_point:fo["footer_start"]])   # session 2+ (empty if single-session)
+    footer_bytes = bytes(data[fo["footer_start"]:])
+    later_tracks = [t for t in tracks if t is not tr and t.start_lba > tr.start_lba]
+
     patched, appended, skipped = [], [], []
     append_phys = total_iso_sectors                 # next free physical sector (at track end)
-    footer_bytes = bytes(data[fo["footer_start"]:])  # capture, then drop the old footer
-    del data[fo["footer_start"]:]                    # so appended sectors extend cleanly
+    del data[insert_point:]                          # appends extend cleanly before session 2
 
     for name in sorted(files):
         u = name.upper()
@@ -212,26 +228,34 @@ def grow_cdi(src, dst, files: dict):
             append_phys += nsec
 
     added = append_phys - total_iso_sectors
+    fb = bytearray(footer_bytes)
     if added:
         # 1) extend ISO PVD volume-space size (LE @0x50, BE @0x54 in PVD sector 16)
         pvd_phys = D._find_pvd(iso)
         new_vol = struct.unpack_from("<I", iso, pvd_phys * 2048 + 80)[0] + added
         struct.pack_into("<I", data, base + pvd_phys * ss + hlen + 80, new_vol)
         struct.pack_into(">I", data, base + pvd_phys * ss + hlen + 84, new_vol)
-        # 2) extend the data track length + total_length + move the footer
-        new_footer_start = fo["footer_start"] + added * ss
-        length_rel = dt["length_off"] - fo["footer_start"]
-        total_rel = dt["total_off"] - fo["footer_start"]
-        fb = bytearray(footer_bytes)
-        struct.pack_into("<i", fb, length_rel, dt["length"] + added)
-        struct.pack_into("<I", fb, total_rel, dt["total_length"] + added)
-        # header_offset: v3.5 stores it as distance from EOF; v2/v3 from file start
-        hdr_off = len(fb) if fo["version"] == CDI_V35 else new_footer_start
+        # 2) bump EVERY geometry field by `added`. The DiscJuggler footer keeps
+        #    duplicate copies (a secondary total_length, and a re-listed start/end LBA
+        #    per track in the tail), so patching just the primary offsets leaves stale
+        #    values behind. A value-based bump catches all copies: the grown track's
+        #    length + total_length grow; every LATER session's start-LBA and end-LBA
+        #    shift by the inserted amount. (Values are far apart -- session gap ~11250
+        #    -- so no old/new collisions in practice.)
+        bumps = {dt["length"]: dt["length"] + added,
+                 dt["total_length"]: dt["total_length"] + added}
+        for lt in later_tracks:
+            bumps[lt.start_lba] = lt.start_lba + added
+            bumps[lt.start_lba + lt.total_length] = lt.start_lba + lt.total_length + added
+        for old, new in bumps.items():
+            fb[:] = fb.replace(struct.pack("<I", old), struct.pack("<I", new))
+        # header_offset: v3.5 stores it as distance from EOF (footer length is
+        # unchanged); v2/v3 store it from file start (moves by the inserted bytes).
+        hdr_off = len(fb) if fo["version"] == CDI_V35 else (insert_point + added * ss + len(later_data))
         struct.pack_into("<II", fb, len(fb) - 8, fo["version"], hdr_off)
-        data += fb                                  # footer now after the new sectors
-    else:
-        data += footer_bytes                        # nothing appended: restore footer
 
+    data += later_data                              # session 2+ data, now shifted later
+    data += fb                                      # footer last
     open(dst, "wb").write(bytes(data))
     return patched, appended, skipped
 
