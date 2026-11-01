@@ -25,9 +25,15 @@ usable by non-technical people.
 | **Character palettes** (skins/recolors) | ✅ |
 | **HUD, lifebars, effects, font, char-select** | ✅ (portable ones) |
 | **Music** | ✅ (transcoded ADX ⇄ Ogg; loop points preserved) |
+| **CPU AI mods** | ✅ Steam → DC (spliced into each character's DC data file) |
 
 Nothing is silently dropped — every changed file is reported as converted or, if
 it genuinely can't cross platforms, listed with the reason.
+
+Building a disc from the CLI also offers an optional **arcade difficulty** bake
+(`--arcade-patches`): the CPU deals/takes full damage, starts every fight at max
+AI rank, and the Options difficulty no longer caps it — patched into the disc's
+own executable, no trainer needed.
 
 ## Two ways to run it
 

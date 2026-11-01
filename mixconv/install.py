@@ -94,7 +94,8 @@ def build_dc_from_steam(out_cdi, mix_arc=None, base_cdi=None, conflict_mode="ste
     convert.steam_to_dc(mix_arc, base, out_cdi,
                         music_dir=config.steam_music_dir(),
                         stock_music_dir=config.STOCK_MUSIC,
-                        conflict_mode=conflict_mode)
+                        conflict_mode=conflict_mode,
+                        stock_arc=config.STOCK_STEAM_ARC)
     progress(f"\nDone. Burnable/emulator-ready disc: {out_cdi}")
     return out_cdi
 

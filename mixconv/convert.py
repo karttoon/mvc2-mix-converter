@@ -15,6 +15,7 @@ import steam
 import dc_oversize
 import palette as pal
 import music as musicmod
+import arcade
 
 
 def md5(b): return hashlib.md5(b).hexdigest()
@@ -149,13 +150,20 @@ def dc_to_steam(mix_cdi, stock_arc, out_arc, blob_out=None,
 
 
 def steam_to_dc(mix_arc, stock_cdi, out_cdi, music_dir=None, stock_music_dir=None,
-                conflict_mode="steam"):
+                conflict_mode="steam", stock_arc=None, port_ai=True,
+                arcade_patches=False):
     """Build a bootable DC .cdi from a Steam game_50.arc mix.
 
     Whole-file portable changes and region-ported palettes are written into the
     disc; oversized files (custom stages, and transcoded music) grow the disc via
     dc_oversize.grow_cdi. If music_dir is given, changed Steam .sngw are transcoded
     to DC ADX and appended.
+
+    port_ai (needs stock_arc, the stock Steam game_50.arc): modified CPU AI
+    files (AFS idx 504+, matched by INDEX - archive names are unreliable) are
+    spliced into the tail of each character's DC PLxx_DAT.BIN.
+    arcade_patches: bake the arcade-difficulty settings (CPU full damage, max
+    rank from round start, difficulty caps lifted) into 1ST_READ.BIN.
 
     A CONFLICT is a file that BOTH the base disc modified (vs true stock DC) and
     the Steam side changed. conflict_mode decides who wins: "steam" (default,
@@ -167,14 +175,20 @@ def steam_to_dc(mix_arc, stock_cdi, out_cdi, music_dir=None, stock_music_dir=Non
 
     stock_dc = read_cdi(stock_cdi)                    # the BASE disc's files
     mix = AfsBlob.parse(steam.read_arc(mix_arc))
+    ai_on = bool(port_ai and stock_arc and os.path.exists(stock_arc))
+    if port_ai and not ai_on:
+        print("NOTE: CPU AI not ported (stock Steam arc not available)")
 
     changed = []  # (name, mix_bytes)
     for i, e in enumerate(mix.entries):
+        if ai_on and arcade.is_ai_idx(i):
+            continue                       # AI files are handled by index below
         if e and stock_steam_md5.get(i) and md5(e) != stock_steam_md5[i]:
             nm = name_by_idx.get(i)
             if nm:
                 changed.append((nm, e))
-    print(f"Steam mix changed {len(changed)} files vs stock Steam")
+    print(f"Steam mix changed {len(changed)} files vs stock Steam"
+          + (" (CPU AI counted separately)" if ai_on else ""))
 
     files = {}                     # NAME -> DC-format bytes to patch
     plan = {WHOLE_FILE: [], PALETTE: [], MUSIC: [], REPORT: []}
@@ -203,6 +217,27 @@ def steam_to_dc(mix_arc, stock_cdi, out_cdi, music_dir=None, stock_music_dir=Non
             except ValueError as ex:
                 problems.append((name, str(ex)))
 
+    # --- CPU AI: splice changed AI files into the tail of each character's DC
+    #     PLxx_DAT.BIN (runs AFTER palettes, so a char with both keeps both) ---
+    ai_done, ai_skip = [], []
+    if ai_on:
+        stock_blob = AfsBlob.parse(steam.read_arc(stock_arc))
+        for ch, (stk, new) in sorted(arcade.changed_ai(mix.entries,
+                                                       stock_blob.entries).items()):
+            dat_name = "PL%02X_DAT.BIN" % ch
+            base_dat = files.get(dat_name) or stock_dc.get(dat_name)
+            if base_dat is None:
+                ai_skip.append((dat_name, "no DC DAT file")); continue
+            try:
+                files[dat_name] = arcade.rebuild_dat(base_dat, stk, new)
+                ai_done.append(ch)
+            except ValueError as ex:
+                ai_skip.append((dat_name, str(ex)))
+
+    # --- arcade difficulty: bake the companion's settings into 1ST_READ.BIN ---
+    if arcade_patches:
+        files["1ST_READ.BIN"] = arcade.patch_arcade_tables(stock_dc["1ST_READ.BIN"])
+
     # --- music: transcode the FULL Steam .sngw set -> DC ADX (appended, oversized)
     #     so the disc is a complete copy of your Steam audio, including menu tracks
     #     the mix itself didn't change. (stock_music_dir kept for API compat/unused) ---
@@ -229,7 +264,18 @@ def steam_to_dc(mix_arc, stock_cdi, out_cdi, music_dir=None, stock_music_dir=Non
           f"(in-place {len(patched)}, appended/oversized {len(appended)})")
     print(f"   stages/UI: {len([n for n in patched if not n.startswith('PL')])} in-place, "
           f"{len([a for a in appended if not a[0].startswith(('PL','ADX'))])} oversized")
-    print(f"   palettes: {len([n for n in patched if n.startswith('PL')])}")
+    written_names = list(patched) + [a[0] for a in appended]
+    print(f"   palettes/char DATs: "
+          f"{len([n for n in written_names if n.startswith('PL')])}")
+    if ai_done:
+        print(f"   CPU AI: {len(ai_done)} characters rebuilt into PL??_DAT.BIN "
+              f"({', '.join('%02X' % c for c in ai_done[:12])}"
+              f"{' ...' if len(ai_done) > 12 else ''})")
+    for n, why in ai_skip:
+        print(f"   SKIP AI {n}: {why}")
+    if arcade_patches:
+        print("   arcade difficulty baked into 1ST_READ.BIN "
+              "(CPU full damage, max rank from start, caps lifted)")
     if music_ported:
         print(f"   music (transcoded .sngw->ADX, appended): {len(music_ported)}")
         for f, adx, sz in music_ported[:6]:
@@ -267,8 +313,15 @@ if __name__ == "__main__":
     a2.add_argument("--stock-cdi", required=True, help="stock DC .cdi to build the disc from")
     a2.add_argument("--out", required=True)
     a2.add_argument("--music-dir", help="Steam sound\\bgm\\mvc2\\wav to port music from")
+    a2.add_argument("--stock-arc", help="stock game_50.arc (enables the CPU AI port)")
+    a2.add_argument("--no-ai", action="store_true", help="skip porting modded CPU AI")
+    a2.add_argument("--arcade-patches", action="store_true",
+                    help="bake arcade difficulty (CPU full damage, max rank, caps "
+                         "lifted) into 1ST_READ.BIN")
     a = ap.parse_args()
     if a.cmd == "dc2steam":
         dc_to_steam(a.mix_cdi, a.stock_arc, a.out, a.blob_out, a.files_out, a.music_out)
     else:
-        steam_to_dc(a.mix_arc, a.stock_cdi, a.out, music_dir=a.music_dir)
+        steam_to_dc(a.mix_arc, a.stock_cdi, a.out, music_dir=a.music_dir,
+                    stock_arc=a.stock_arc, port_ai=not a.no_ai,
+                    arcade_patches=a.arcade_patches)
