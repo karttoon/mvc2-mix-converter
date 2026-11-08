@@ -21,11 +21,11 @@
   },
   {
    "idx": 2,
-   "name": "F002.BIN",
+   "name": "DEBUG.BIN",
    "size": 3232,
-   "dc_md5": null,
+   "dc_md5": "6edfa62eb0b06c9a7896a20284071c40",
    "steam_md5": "6edfa62eb0b06c9a7896a20284071c40",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 3,
@@ -229,7 +229,7 @@
   },
   {
    "idx": 28,
-   "name": "PL18_FAC.BIN",
+   "name": "PL19_FAC.BIN",
    "size": 25740,
    "dc_md5": "34df918148c6de34c7540f3624add2ec",
    "steam_md5": "34df918148c6de34c7540f3624add2ec",
@@ -237,7 +237,7 @@
   },
   {
    "idx": 29,
-   "name": "PL18_FAC.BIN",
+   "name": "PL1A_FAC.BIN",
    "size": 25740,
    "dc_md5": "34df918148c6de34c7540f3624add2ec",
    "steam_md5": "34df918148c6de34c7540f3624add2ec",
@@ -1421,259 +1421,259 @@
   },
   {
    "idx": 177,
-   "name": "PL18_WIN.BIN",
+   "name": "PL1B_WIN.BIN",
    "size": 33682,
-   "dc_md5": null,
+   "dc_md5": "290becd7b5b6db33a9a89aff0e7c0639",
    "steam_md5": "290becd7b5b6db33a9a89aff0e7c0639",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 178,
-   "name": "PL19_WIN.BIN",
+   "name": "PL1C_WIN.BIN",
    "size": 25904,
-   "dc_md5": null,
+   "dc_md5": "952912a203fe58ae7bcca43db60a91d5",
    "steam_md5": "952912a203fe58ae7bcca43db60a91d5",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 179,
-   "name": "PL1A_WIN.BIN",
+   "name": "PL1D_WIN.BIN",
    "size": 20502,
-   "dc_md5": null,
+   "dc_md5": "b593ea8c0628534743382e07423040fd",
    "steam_md5": "b593ea8c0628534743382e07423040fd",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 180,
-   "name": "PL1B_WIN.BIN",
+   "name": "PL1E_WIN.BIN",
    "size": 24988,
-   "dc_md5": "290becd7b5b6db33a9a89aff0e7c0639",
+   "dc_md5": "ad2e22a679c260af07851f1afc785508",
    "steam_md5": "ad2e22a679c260af07851f1afc785508",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 181,
-   "name": "PL1C_WIN.BIN",
+   "name": "PL1F_WIN.BIN",
    "size": 26942,
-   "dc_md5": "952912a203fe58ae7bcca43db60a91d5",
+   "dc_md5": "5bf1cf6966ce91e9a786540186e28ea7",
    "steam_md5": "5bf1cf6966ce91e9a786540186e28ea7",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 182,
-   "name": "PL1D_WIN.BIN",
+   "name": "PL20_WIN.BIN",
    "size": 37654,
-   "dc_md5": "b593ea8c0628534743382e07423040fd",
+   "dc_md5": "4f3c0b7dc997fd5f3652a88dca45d150",
    "steam_md5": "4f3c0b7dc997fd5f3652a88dca45d150",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 183,
-   "name": "PL1E_WIN.BIN",
+   "name": "PL21_WIN.BIN",
    "size": 23258,
-   "dc_md5": "ad2e22a679c260af07851f1afc785508",
+   "dc_md5": "4ca7c003b88eca73369a671cc7eb5367",
    "steam_md5": "4ca7c003b88eca73369a671cc7eb5367",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 184,
-   "name": "PL1F_WIN.BIN",
+   "name": "PL22_WIN.BIN",
    "size": 24854,
-   "dc_md5": "5bf1cf6966ce91e9a786540186e28ea7",
+   "dc_md5": "037091fb150ba8175dd2af8232623a9b",
    "steam_md5": "037091fb150ba8175dd2af8232623a9b",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 185,
-   "name": "PL20_WIN.BIN",
+   "name": "PL23_WIN.BIN",
    "size": 37772,
-   "dc_md5": "4f3c0b7dc997fd5f3652a88dca45d150",
+   "dc_md5": "6d43db0aa7c9101ceea415446cceb578",
    "steam_md5": "6d43db0aa7c9101ceea415446cceb578",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 186,
-   "name": "PL21_WIN.BIN",
+   "name": "PL24_WIN.BIN",
    "size": 26582,
-   "dc_md5": "4ca7c003b88eca73369a671cc7eb5367",
+   "dc_md5": "86d11daa65eb865f41269d6d20e2bf1a",
    "steam_md5": "86d11daa65eb865f41269d6d20e2bf1a",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 187,
-   "name": "PL22_WIN.BIN",
+   "name": "PL25_WIN.BIN",
    "size": 27314,
-   "dc_md5": "037091fb150ba8175dd2af8232623a9b",
+   "dc_md5": "5d9ae313a031015bc1def6b5480a455f",
    "steam_md5": "5d9ae313a031015bc1def6b5480a455f",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 188,
-   "name": "PL23_WIN.BIN",
+   "name": "PL26_WIN.BIN",
    "size": 35550,
-   "dc_md5": "6d43db0aa7c9101ceea415446cceb578",
+   "dc_md5": "151a051a428cfb6cfc40016419bd858c",
    "steam_md5": "151a051a428cfb6cfc40016419bd858c",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 189,
-   "name": "PL24_WIN.BIN",
+   "name": "PL27_WIN.BIN",
    "size": 32208,
-   "dc_md5": "86d11daa65eb865f41269d6d20e2bf1a",
+   "dc_md5": "479b33bb09a89baf5d674d74f28e8a62",
    "steam_md5": "479b33bb09a89baf5d674d74f28e8a62",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 190,
-   "name": "PL25_WIN.BIN",
+   "name": "PL28_WIN.BIN",
    "size": 31008,
-   "dc_md5": "5d9ae313a031015bc1def6b5480a455f",
+   "dc_md5": "9103d954a2093491cb436f48ece54515",
    "steam_md5": "9103d954a2093491cb436f48ece54515",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 191,
-   "name": "PL26_WIN.BIN",
+   "name": "PL29_WIN.BIN",
    "size": 35422,
-   "dc_md5": "151a051a428cfb6cfc40016419bd858c",
+   "dc_md5": "d1fb107c4f52ecf37194b81e2cc5a052",
    "steam_md5": "d1fb107c4f52ecf37194b81e2cc5a052",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 192,
-   "name": "PL27_WIN.BIN",
+   "name": "PL2A_WIN.BIN",
    "size": 48550,
-   "dc_md5": "479b33bb09a89baf5d674d74f28e8a62",
+   "dc_md5": "d27a3b72406e60b2befa54a96402df50",
    "steam_md5": "d27a3b72406e60b2befa54a96402df50",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 193,
-   "name": "PL28_WIN.BIN",
+   "name": "PL2B_WIN.BIN",
    "size": 42928,
-   "dc_md5": "9103d954a2093491cb436f48ece54515",
+   "dc_md5": "8c6d3e15798148bdad8b744df9bcc38b",
    "steam_md5": "8c6d3e15798148bdad8b744df9bcc38b",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 194,
-   "name": "PL29_WIN.BIN",
+   "name": "PL2C_WIN.BIN",
    "size": 43404,
-   "dc_md5": "d1fb107c4f52ecf37194b81e2cc5a052",
+   "dc_md5": "a5ddb48eb0b256e4f30fb2d939e82b31",
    "steam_md5": "a5ddb48eb0b256e4f30fb2d939e82b31",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 195,
-   "name": "PL2A_WIN.BIN",
+   "name": "PL2D_WIN.BIN",
    "size": 42854,
-   "dc_md5": "d27a3b72406e60b2befa54a96402df50",
+   "dc_md5": "33359ae0e8512068206ea010aa682bda",
    "steam_md5": "33359ae0e8512068206ea010aa682bda",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 196,
-   "name": "PL2B_WIN.BIN",
+   "name": "PL2E_WIN.BIN",
    "size": 40508,
-   "dc_md5": "8c6d3e15798148bdad8b744df9bcc38b",
+   "dc_md5": "22279ab229e1d7ae918f68c57671fe1b",
    "steam_md5": "22279ab229e1d7ae918f68c57671fe1b",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 197,
-   "name": "PL2C_WIN.BIN",
+   "name": "PL2F_WIN.BIN",
    "size": 53670,
-   "dc_md5": "a5ddb48eb0b256e4f30fb2d939e82b31",
+   "dc_md5": "d57d38231bee9c1ccfa7370e5ae47d9d",
    "steam_md5": "d57d38231bee9c1ccfa7370e5ae47d9d",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 198,
-   "name": "PL2D_WIN.BIN",
+   "name": "PL30_WIN.BIN",
    "size": 52824,
-   "dc_md5": "33359ae0e8512068206ea010aa682bda",
+   "dc_md5": "ecfa7ee18241ed9770e4b5bf2e2e80ab",
    "steam_md5": "ecfa7ee18241ed9770e4b5bf2e2e80ab",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 199,
-   "name": "PL2E_WIN.BIN",
+   "name": "PL31_WIN.BIN",
    "size": 49106,
-   "dc_md5": "22279ab229e1d7ae918f68c57671fe1b",
+   "dc_md5": "bb64bb5e25ee0f274a946452b380182e",
    "steam_md5": "bb64bb5e25ee0f274a946452b380182e",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 200,
-   "name": "PL2F_WIN.BIN",
+   "name": "PL32_WIN.BIN",
    "size": 42874,
-   "dc_md5": "d57d38231bee9c1ccfa7370e5ae47d9d",
+   "dc_md5": "7fc0a22b09ece63586b277aa57b826c0",
    "steam_md5": "7fc0a22b09ece63586b277aa57b826c0",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 201,
-   "name": "PL30_WIN.BIN",
+   "name": "PL33_WIN.BIN",
    "size": 46982,
-   "dc_md5": "ecfa7ee18241ed9770e4b5bf2e2e80ab",
+   "dc_md5": "6ffc3371def14f2551a6bd409111eb15",
    "steam_md5": "6ffc3371def14f2551a6bd409111eb15",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 202,
-   "name": "PL31_WIN.BIN",
+   "name": "PL34_WIN.BIN",
    "size": 46060,
-   "dc_md5": "bb64bb5e25ee0f274a946452b380182e",
+   "dc_md5": "6d52342fd0a4759f8b877407312a1a15",
    "steam_md5": "6d52342fd0a4759f8b877407312a1a15",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 203,
-   "name": "PL32_WIN.BIN",
+   "name": "PL35_WIN.BIN",
    "size": 38896,
-   "dc_md5": "7fc0a22b09ece63586b277aa57b826c0",
+   "dc_md5": "386c57ac3277193475084fd854a232cb",
    "steam_md5": "386c57ac3277193475084fd854a232cb",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 204,
-   "name": "PL33_WIN.BIN",
+   "name": "PL36_WIN.BIN",
    "size": 40836,
-   "dc_md5": "6ffc3371def14f2551a6bd409111eb15",
+   "dc_md5": "fcb3685f490d26817c1ef0ef27432924",
    "steam_md5": "fcb3685f490d26817c1ef0ef27432924",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 205,
-   "name": "PL34_WIN.BIN",
+   "name": "PL37_WIN.BIN",
    "size": 40638,
-   "dc_md5": "6d52342fd0a4759f8b877407312a1a15",
+   "dc_md5": "78d6ead4d238c033b82bf9acca33524d",
    "steam_md5": "78d6ead4d238c033b82bf9acca33524d",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 206,
-   "name": "PL35_WIN.BIN",
+   "name": "PL38_WIN.BIN",
    "size": 41782,
-   "dc_md5": "386c57ac3277193475084fd854a232cb",
+   "dc_md5": "d5c013a1b31880be296961daa7d9bf38",
    "steam_md5": "d5c013a1b31880be296961daa7d9bf38",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 207,
-   "name": "PL36_WIN.BIN",
+   "name": "PL39_WIN.BIN",
    "size": 35326,
-   "dc_md5": "fcb3685f490d26817c1ef0ef27432924",
+   "dc_md5": "96b594c086e3da129818a55e97f9ea89",
    "steam_md5": "96b594c086e3da129818a55e97f9ea89",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 208,
-   "name": "PL37_WIN.BIN",
+   "name": "PL3A_WIN.BIN",
    "size": 30450,
-   "dc_md5": "78d6ead4d238c033b82bf9acca33524d",
+   "dc_md5": "fe303b7ffc4a5a3ce4cd190597226f53",
    "steam_md5": "fe303b7ffc4a5a3ce4cd190597226f53",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 209,
@@ -6861,7 +6861,7 @@
   },
   {
    "idx": 857,
-   "name": "DM0APOL.BIN",
+   "name": "DM0EPOL.BIN",
    "size": 2936,
    "dc_md5": "cc111980c3a154f11dc437276589188f",
    "steam_md5": "cc111980c3a154f11dc437276589188f",
@@ -6885,11 +6885,11 @@
   },
   {
    "idx": 860,
-   "name": "DM08CAR.BIN",
+   "name": "DM08CAB.BIN",
    "size": 1048576,
-   "dc_md5": null,
+   "dc_md5": "15bab7d0d6b3bd473da1fd1701e784b8",
    "steam_md5": "15bab7d0d6b3bd473da1fd1701e784b8",
-   "portable": false
+   "portable": true
   },
   {
    "idx": 861,

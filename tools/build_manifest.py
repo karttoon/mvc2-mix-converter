@@ -49,11 +49,14 @@ def main():
     dc = {n.upper(): iso[p*2048:p*2048+s] for n, p, s in dc_walk}
     dc_md5 = {n: md5(b) for n, b in dc.items()}
 
-    # stock md5 -> name (prefer a unique name)
+    # stock md5 -> name. DC filesystem names are ground truth (the disc names
+    # its own files); mvcc_files.json names are guesses and are WRONG where the
+    # DC numbering has gaps (PL18/19/1A_WIN don't exist, so its WIN names run
+    # 3 low from PL18 on). Only fall back to the json for Steam-only files.
     md5_to_name = {}
-    for n, (h, _) in steam.items():
-        md5_to_name.setdefault(h, n)
     for n, h in dc_md5.items():
+        md5_to_name.setdefault(h, n)
+    for n, (h, _) in steam.items():
         md5_to_name.setdefault(h, n)
 
     raw = open(a.blob, "rb").read()
