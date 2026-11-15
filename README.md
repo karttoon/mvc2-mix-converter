@@ -35,6 +35,14 @@ Building a disc from the CLI also offers an optional **arcade difficulty** bake
 AI rank, and the Options difficulty no longer caps it — patched into the disc's
 own executable, no trainer needed.
 
+**Custom-stage safety:** "full replacement" custom stages (slim single-model
+stage files, common for modded training rooms) run fine on the Steam port but
+crash real Dreamcast hardware and strict emulators like nullDC — the game's
+per-stage code expects the stock file structure. When building a disc, the
+converter detects these and automatically repackages them into the stock slot
+structure (same art, full resolution) so the disc is safe everywhere. The CLI
+flag `--no-stage-fix` disables it.
+
 ## Two ways to run it
 
 Both use the same engine and do the same things — pick whichever you like.

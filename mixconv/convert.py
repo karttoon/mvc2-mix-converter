@@ -16,6 +16,7 @@ import dc_oversize
 import palette as pal
 import music as musicmod
 import arcade
+import stagemerge
 
 
 def md5(b): return hashlib.md5(b).hexdigest()
@@ -151,7 +152,7 @@ def dc_to_steam(mix_cdi, stock_arc, out_arc, blob_out=None,
 
 def steam_to_dc(mix_arc, stock_cdi, out_cdi, music_dir=None, stock_music_dir=None,
                 conflict_mode="steam", stock_arc=None, port_ai=True,
-                arcade_patches=False):
+                arcade_patches=False, stage_fix=True):
     """Build a bootable DC .cdi from a Steam game_50.arc mix.
 
     Whole-file portable changes and region-ported palettes are written into the
@@ -164,6 +165,10 @@ def steam_to_dc(mix_arc, stock_cdi, out_cdi, music_dir=None, stock_music_dir=Non
     spliced into the tail of each character's DC PLxx_DAT.BIN.
     arcade_patches: bake the arcade-difficulty settings (CPU full damage, max
     rank from round start, difficulty caps lifted) into 1ST_READ.BIN.
+    stage_fix: slim full-replacement custom stages (1-model Paxtez-style POLs,
+    fine on the lenient Steam port but a crash on real DC/nullDC - the game's
+    per-slot stage code walks the stock POL structure) are repackaged into the
+    stock slot structure via stagemerge before they go on the disc.
 
     A CONFLICT is a file that BOTH the base disc modified (vs true stock DC) and
     the Steam side changed. conflict_mode decides who wins: "steam" (default,
@@ -217,11 +222,47 @@ def steam_to_dc(mix_arc, stock_cdi, out_cdi, music_dir=None, stock_music_dir=Non
             except ValueError as ex:
                 problems.append((name, str(ex)))
 
+    stock_blob = (AfsBlob.parse(steam.read_arc(stock_arc))
+                  if stock_arc and os.path.exists(stock_arc) else None)
+
+    def true_stock(name):
+        """Stock bytes for a portable file: the base disc's copy when it is
+        unmodified, else the stock Steam arc's (stage files are byte-identical
+        across platforms), else None."""
+        e = man.by_name.get(name, {})
+        b = stock_dc.get(name)
+        if b is not None and e.get("dc_md5") == md5(b):
+            return b
+        if stock_blob is not None and e.get("idx") is not None:
+            return stock_blob.entries[e["idx"]] or None
+        return None
+
+    # --- slim custom stages: a full-replacement 1-model POL works on Steam but
+    #     crashes strict DC hosts (the per-slot stage code walks the stock POL's
+    #     models/records). Repackage it into the stock slot structure. ---
+    stage_fixed = []
+    if stage_fix:
+        for s in range(0x11):
+            pn, tn = "STG%02XPOL.BIN" % s, "STG%02XTEX.BIN" % s
+            port_pol = files.get(pn)
+            if port_pol is None:
+                continue
+            stock_pol = true_stock(pn)
+            if stock_pol is None or not stagemerge.is_slim_custom(port_pol, stock_pol):
+                continue
+            port_tex = files.get(tn) or stock_dc.get(tn, b"")
+            try:
+                files[pn], files[tn] = stagemerge.merge(
+                    stock_pol, true_stock(tn) or b"", port_pol, port_tex)
+                stage_fixed.append(pn[:5])
+            except ValueError as ex:
+                problems.append((pn, "slim custom stage, DC-unsafe and not "
+                                     "repackageable (ported as-is): " + str(ex)))
+
     # --- CPU AI: splice changed AI files into the tail of each character's DC
     #     PLxx_DAT.BIN (runs AFTER palettes, so a char with both keeps both) ---
     ai_done, ai_skip = [], []
     if ai_on:
-        stock_blob = AfsBlob.parse(steam.read_arc(stock_arc))
         for ch, (stk, new) in sorted(arcade.changed_ai(mix.entries,
                                                        stock_blob.entries).items()):
             dat_name = "PL%02X_DAT.BIN" % ch
@@ -267,6 +308,10 @@ def steam_to_dc(mix_arc, stock_cdi, out_cdi, music_dir=None, stock_music_dir=Non
     written_names = list(patched) + [a[0] for a in appended]
     print(f"   palettes/char DATs: "
           f"{len([n for n in written_names if n.startswith('PL')])}")
+    if stage_fixed:
+        print(f"   custom stages repackaged for DC ({', '.join(stage_fixed)}): slim "
+              f"replacement POLs spliced into the stock slot structure (required "
+              f"on real hardware / strict emulators)")
     if ai_done:
         print(f"   CPU AI: {len(ai_done)} characters rebuilt into PL??_DAT.BIN "
               f"({', '.join('%02X' % c for c in ai_done[:12])}"
@@ -318,10 +363,14 @@ if __name__ == "__main__":
     a2.add_argument("--arcade-patches", action="store_true",
                     help="bake arcade difficulty (CPU full damage, max rank, caps "
                          "lifted) into 1ST_READ.BIN")
+    a2.add_argument("--no-stage-fix", action="store_true",
+                    help="port slim full-replacement custom stages untouched "
+                         "instead of repackaging them into the stock slot "
+                         "structure (they crash real DC hardware and nullDC)")
     a = ap.parse_args()
     if a.cmd == "dc2steam":
         dc_to_steam(a.mix_cdi, a.stock_arc, a.out, a.blob_out, a.files_out, a.music_out)
     else:
         steam_to_dc(a.mix_arc, a.stock_cdi, a.out, music_dir=a.music_dir,
                     stock_arc=a.stock_arc, port_ai=not a.no_ai,
-                    arcade_patches=a.arcade_patches)
+                    arcade_patches=a.arcade_patches, stage_fix=not a.no_stage_fix)
