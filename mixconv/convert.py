@@ -252,8 +252,22 @@ def steam_to_dc(mix_arc, stock_cdi, out_cdi, music_dir=None, stock_music_dir=Non
                 continue
             port_tex = files.get(tn) or stock_dc.get(tn, b"")
             try:
-                files[pn], files[tn] = stagemerge.merge(
-                    stock_pol, true_stock(tn) or b"", port_pol, port_tex)
+                if s == 0x0B:
+                    # Training: the game draws the whole training menu from
+                    # this stage's models 1+, so those must survive the merge
+                    try:
+                        files[pn], files[tn] = stagemerge.merge_preserve(
+                            stock_pol, true_stock(tn) or b"", port_pol, port_tex)
+                    except ValueError as ex:
+                        files[pn], files[tn] = stagemerge.merge(
+                            stock_pol, true_stock(tn) or b"", port_pol, port_tex)
+                        problems.append((pn, "custom training stage kept, but its "
+                                             "art could not fit beside the training "
+                                             "menu's pages - the training menu will "
+                                             "render blank: " + str(ex)))
+                else:
+                    files[pn], files[tn] = stagemerge.merge(
+                        stock_pol, true_stock(tn) or b"", port_pol, port_tex)
                 stage_fixed.append(pn[:5])
             except ValueError as ex:
                 problems.append((pn, "slim custom stage, DC-unsafe and not "

@@ -22,7 +22,21 @@ nothing moves - and splice the port in.
 Unlike merge_slot.py this keeps the port's art at full size: the output TEX is
 the port's TEX with the stub appended in its padding (the converter grows files
 on both platforms, so the stock TEX budget does not apply).
+
+Slot 0B (Training) is special: the game draws the ENTIRE training menu from the
+stage's own file - pause_bg/win/cfg/opt/yn.c set their work objects straight to
+obj_stg->obj[1..78], textured from records 2-9 (eight 256x256 menu pages). The
+generic merge blanks all of that: the menu "works" but renders black (seen
+live). merge_preserve() is the slot-0B variant: only model 0 (the room, the one
+model the normal scene draws) is replaced and every other model and its texture
+pages stay byte-identical; the port's records go to the slots only model 0 used
+plus the table's terminator slot, which is safe to use because the stage record
+table is never walked to a terminator (stages load flat at their fixed
+addresses - no obj_file_reloc - and nlObjPutLoadTexture looks records up by
+mesh index only). The port's art is halved in place (Morton 2x2 averaging)
+until menu pages + art fit the proven RAM/VRAM budget for the slot.
 """
+import array
 import struct
 
 POL_RAM = 0x0CEA0000
@@ -207,3 +221,152 @@ def merge(stock_pol, stock_tex, port_pol, port_tex):
         if bad:
             raise ValueError(f"model {k} still samples records {sorted(set(bad))}")
     return bytes(out), out_tex
+
+
+# 16-bit channel layouts by the record's colour-format byte: (shift, max)
+_CHANNELS = {
+    0: ((15, 1), (10, 31), (5, 31), (0, 31)),    # ARGB1555
+    1: ((11, 31), (5, 63), (0, 31)),             # RGB565
+    2: ((12, 15), (8, 15), (4, 15), (0, 15)),    # ARGB4444
+}
+
+
+def _halve(data, fmt):
+    """Half-size a twiddled 16bpp texture by averaging each consecutive quad.
+    In Morton order 4 consecutive texels are one 2x2 block, and the square
+    blocks a rectangle decomposes into are a multiple of 4 texels each, so this
+    needs no coordinate math at all."""
+    ch = _CHANNELS.get(fmt)
+    if ch is None:
+        raise ValueError(f"cannot scale colour format {fmt}")
+    src = array.array("H")
+    src.frombytes(data)
+    out = array.array("H", bytes(len(data) // 4))
+    for i in range(len(out)):
+        a, b, c, d = src[4 * i:4 * i + 4]
+        v = 0
+        for sh, mx in ch:
+            v |= ((((a >> sh) & mx) + ((b >> sh) & mx)
+                   + ((c >> sh) & mx) + ((d >> sh) & mx) + 2) >> 2) << sh
+        out[i] = v
+    return out.tobytes()
+
+
+def merge_preserve(stock_pol, stock_tex, port_pol, port_tex):
+    """The slot-0B merge: port replaces model 0 only, every other model (the
+    training menu) and its texture pages are preserved byte-for-byte. Raises
+    ValueError when the port cannot be fitted this way."""
+    sb, stex, ob, otex = stock_pol, stock_tex, port_pol, port_tex
+    smt, smc, strs, stre = _header(sb)
+    srecs, orecs = records(sb), records(ob)
+    spans, ospans = model_spans(sb), model_spans(ob)
+
+    # records the preserved models sample stay; the rest (only model 0 used
+    # them) are free for the port, plus the terminator slot (see module doc)
+    keep = set()
+    for k in range(1, smc):
+        s, e = spans[k]
+        for o in _mesh_texids(sb, s, e):
+            t = struct.unpack_from("<I", sb, o)[0]
+            if t != 0xFFFFFFFF:
+                keep.add(t)
+    free = [i for i in range(len(srecs)) if i not in keep]
+    if (stre - strs) // REC > len(srecs):
+        free.append(len(srecs))
+    if len(orecs) > len(free):
+        raise ValueError(f"port has {len(orecs)} texture records, only "
+                         f"{len(free)} slots free beside the menu's")
+
+    # the port model must fit model 0's span: no swapping in this mode, every
+    # other model is pinned to its index by the menu code
+    o0s, o0e = ospans[0]
+    blob = bytearray(ob[o0s:o0e])
+    vs, ve = spans[0]
+    if len(blob) > ve - vs:
+        raise ValueError(f"port model is {len(blob)} B, model 0's span only {ve - vs} B")
+    for w in range(0, len(blob) - 3, 4):  # the port model must be position-independent
+        v = struct.unpack_from("<I", blob, w)[0]
+        if 0x0CC00000 <= v < 0x0CF00000:
+            raise ValueError(f"port model holds an absolute pointer ({v:#x}) at +{w:#x}")
+
+    # CPS2-builder ports: decal shading, as in merge() (third-party ports: no-op)
+    j = 0
+    while True:
+        j = blob.find(PORT_MARK, j)
+        if j < 0:
+            break
+        to = j - 0x14
+        struct.pack_into("<I", blob, to, struct.unpack_from("<I", blob, to)[0] & ~(3 << SHADE))
+        j += 4
+
+    # re-point the port's meshes at the free slots
+    for o in _mesh_texids(blob, 0, len(blob)):
+        t = struct.unpack_from("<I", blob, o)[0]
+        if t == 0xFFFFFFFF:
+            continue
+        if t >= len(orecs):
+            raise ValueError(f"port mesh samples record {t}, port only has {len(orecs)}")
+        struct.pack_into("<I", blob, o, free[t])
+
+    # budget: what this slot has already proven it can hold (RAM staging and
+    # VRAM both scale with total texture bytes). Menu pages are immovable, so
+    # the port's art is halved until pages + art fit.
+    keep_end = max(srecs[i]["base"] - TEX_RAM + srecs[i]["w"] * srecs[i]["h"] * 2
+                   for i in keep) if keep else 0
+    if keep_end > len(stex):
+        raise ValueError("stock TEX shorter than its own record table claims")
+    budget = max(len(stex), len(otex))
+    texs, dims = [], []
+    for i, r in enumerate(orecs):
+        o = r["base"] - TEX_RAM
+        if o + r["w"] * r["h"] * 2 > len(otex):
+            raise ValueError(f"port record {i} points outside the port TEX")
+        texs.append(otex[o:o + r["w"] * r["h"] * 2])
+        dims.append((r["w"], r["h"]))
+    halved = 0
+    while keep_end + sum(len(t) for t in texs) > budget - 32:
+        if halved == 3 or any(w < 64 or h < 16 for w, h in dims):
+            raise ValueError("port art cannot be scaled down far enough to fit "
+                             "beside the menu pages")
+        texs = [_halve(t, orecs[i]["fmt"]) for i, t in enumerate(texs)]
+        dims = [(w // 2, h // 2) for w, h in dims]
+        halved += 1
+
+    # output TEX: stock content up to the last preserved page, art appended
+    art = (keep_end + 31) & ~31
+    out_tex = bytearray(stex[:keep_end]) + b"\0" * (art - keep_end)
+    bases = []
+    for t in texs:
+        bases.append(TEX_RAM + len(out_tex))
+        out_tex += t
+
+    # output POL: stock byte-for-byte, model 0's span swapped for the port,
+    # port records written into the free slots (unused free slots keep their
+    # stock entries; an unused terminator slot stays zero)
+    out = bytearray(sb)
+    out[vs:ve] = bytes(blob) + b"\0" * (ve - vs - len(blob))
+    trs = strs - POL_RAM
+    for i, r in enumerate(orecs):
+        struct.pack_into("<HHBBHII", out, trs + free[i] * REC,
+                         dims[i][0], dims[i][1], r["fmt"], r["fl"], 0, bases[i], 0)
+
+    # self-check: menu models and pages byte-identical, port meshes only on
+    # their own slots, record table still parses
+    if bytes(out[spans[1][0]:]) != sb[spans[1][0]:]:
+        raise ValueError("a preserved model changed")
+    if bytes(out_tex[:keep_end]) != stex[:keep_end]:
+        raise ValueError("a preserved texture page changed")
+    outb = bytes(out)
+    nrecs = records(outb)
+    for i in keep:
+        if nrecs[i] != srecs[i]:
+            raise ValueError(f"preserved record {i} changed")
+    used = {free[i] for i in range(len(orecs))}
+    tids = {struct.unpack_from("<I", outb, o)[0] for o in _mesh_texids(outb, vs, ve)}
+    if not tids <= used | {0xFFFFFFFF}:
+        raise ValueError(f"port meshes sample {sorted(tids - used)}")
+    for i in used:
+        r = nrecs[i]
+        if r["base"] - TEX_RAM + r["w"] * r["h"] * 2 > len(out_tex):
+            raise ValueError(f"port record {i} points outside the output TEX")
+    return outb, bytes(out_tex)
