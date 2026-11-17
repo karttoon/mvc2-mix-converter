@@ -52,7 +52,7 @@ Both use the same engine and do the same things — pick whichever you like.
 
 ### A) Standalone app — easiest, no Python
 
-Grab the `MixConverter_v1.0.zip` from the release, unzip it (keep the files
+Grab the `MixConverter_v1.3.0.zip` from the latest release, unzip it (keep the files
 together), and double-click **`MixConverter.exe`**. ffmpeg is bundled; there's no
 Python install and no console.
 
